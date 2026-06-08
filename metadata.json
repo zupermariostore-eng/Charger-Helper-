@@ -1,0 +1,6 @@
+{
+  "name": "Deepal Voice AI",
+  "description": "Voice Intelligence System for Deepal S05 EV in Phnom Penh",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,50 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- Outer Neon Rings -->
+    <path
+        android:pathData="M54,24 A30,30 0 1 1 53.99,24"
+        android:strokeWidth="1.5"
+        android:strokeColor="#3380FF"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M54,18 A36,36 0 1 1 53.99,18"
+        android:strokeWidth="0.8"
+        android:strokeColor="#33FFCC"
+        android:strokeLineCap="round" />
+
+    <!-- Waveforms -->
+    <path
+        android:pathData="M24,54 C34,44 44,64 54,54 C64,44 74,64 84,54"
+        android:strokeWidth="2"
+        android:strokeColor="#00E5FF"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M28,54 C36,49 45,59 54,54 C63,49 72,59 80,54"
+        android:strokeWidth="1.2"
+        android:strokeColor="#B000FF"
+        android:strokeLineCap="round" />
+
+    <!-- Sleek Microphone Silhouette -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,34c-4.42,0 -8,3.58 -8,8v12c0,4.42 3.58,8 8,8s8,-3.58 8,-8v-12c0,-4.42 -3.58,-8 -8,-8z" />
+    <path
+        android:strokeWidth="3.5"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:pathData="M42,48c0,6.63 5.37,12 12,12s12,-5.37 12,-12" />
+    <path
+        android:strokeWidth="3.5"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:pathData="M54,60v8" />
+    <path
+        android:strokeWidth="3.5"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:pathData="M46,68h16" />
+</vector>
