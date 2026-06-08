@@ -56,6 +56,16 @@ class VoiceIntelligenceViewModel(application: Application) : AndroidViewModel(ap
     private val _isDemoMode = MutableStateFlow(false)
     val isDemoMode: StateFlow<Boolean> = _isDemoMode.asStateFlow()
 
+    private val _isKhmerTtsSupported = MutableStateFlow(false)
+    val isKhmerTtsSupported: StateFlow<Boolean> = _isKhmerTtsSupported.asStateFlow()
+
+    private val _voiceLanguagePref = MutableStateFlow("AUTO") // "AUTO", "KHMER", "ENGLISH"
+    val voiceLanguagePref: StateFlow<String> = _voiceLanguagePref.asStateFlow()
+
+    fun setVoiceLanguagePref(lang: String) {
+        _voiceLanguagePref.value = lang
+    }
+
     // Vehicle live parameters
     private val _speed = MutableStateFlow(0)
     val speed: StateFlow<Int> = _speed.asStateFlow()
@@ -124,8 +134,10 @@ class VoiceIntelligenceViewModel(application: Application) : AndroidViewModel(ap
             val khmerAvailable = tts?.isLanguageAvailable(Locale("km"))
             if (khmerAvailable == TextToSpeech.LANG_AVAILABLE || khmerAvailable == TextToSpeech.LANG_COUNTRY_AVAILABLE) {
                 tts?.language = Locale("km")
+                _isKhmerTtsSupported.value = true
             } else {
                 tts?.language = Locale.ENGLISH // Fallback to English
+                _isKhmerTtsSupported.value = false
             }
             isTtsInitialized = true
         } else {
@@ -133,10 +145,28 @@ class VoiceIntelligenceViewModel(application: Application) : AndroidViewModel(ap
         }
     }
 
-    fun speak(text: String) {
-        if (isTtsInitialized) {
-            tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "voice_command_reply")
+    fun speak(result: VoiceIntelligenceResult) {
+        if (!isTtsInitialized) return
+
+        val useKhmer = when (_voiceLanguagePref.value) {
+            "KHMER" -> true
+            "ENGLISH" -> false
+            else -> _isKhmerTtsSupported.value // AUTO fallback to english if Khmer TTS not in OS
         }
+
+        val textToSpeak = if (useKhmer) {
+            result.spokenResponseKhmer
+        } else {
+            result.spokenResponseEnglish ?: "Executing command"
+        }
+
+        if (useKhmer) {
+            tts?.language = Locale("km")
+        } else {
+            tts?.language = Locale.ENGLISH
+        }
+
+        tts?.speak(textToSpeak, TextToSpeech.QUEUE_FLUSH, null, "voice_command_reply")
     }
 
     fun setDriveSimulationActive(active: Boolean) {
@@ -267,8 +297,8 @@ class VoiceIntelligenceViewModel(application: Application) : AndroidViewModel(ap
             }
         }
 
-        // Speak the Khmer response aloud
-        speak(result.spokenResponseKhmer)
+        // Speak the response aloud (using automatic language detection/preference)
+        speak(result)
     }
 
     /**
@@ -282,6 +312,7 @@ class VoiceIntelligenceViewModel(application: Application) : AndroidViewModel(ap
             chargerTypeRequired = "GB/T",
             destinationName = null,
             spokenResponseKhmer = "ចាស៎! ខ្ញុំលឺសំលេងលោកអ្នកមកពីមីក្រូហ្វូនហើយ។ កំពុងស្វែងរកកន្លែងសាកថ្មប្រភេទ GB/T ជិតបំផុតជូនលោកអ្នក។",
+            spokenResponseEnglish = "I have received your recorded voice command. Searching for the nearest GB/T charging station for you now.",
             transcribedKhmerText = "រកកន្លែងសាកថ្មឡាន (Recorded via Microphone)"
         )
     }
@@ -293,6 +324,7 @@ class VoiceIntelligenceViewModel(application: Application) : AndroidViewModel(ap
                 chargerTypeRequired = "GB/T",
                 destinationName = null,
                 spokenResponseKhmer = "ចាស៎ កំពុងស្វែងរកកន្លែងសាកថ្មប្រភេទ GB/T ជិតបំផុតជូនលោកអ្នក។",
+                spokenResponseEnglish = "Sure! Searching for the nearest GB/T charging station for your vehicle now.",
                 transcribedKhmerText = khmerPrompt
             )
             "LOW_BATTERY" -> VoiceIntelligenceResult(
@@ -300,6 +332,7 @@ class VoiceIntelligenceViewModel(application: Application) : AndroidViewModel(ap
                 chargerTypeRequired = "GB/T",
                 destinationName = null,
                 spokenResponseKhmer = "ថ្មឡានជិតអស់ហើយ! ខ្ញុំបានស្វែងរកឃើញស្ថានីយសាកថ្មប្រភេទ GB/T ជិតបំផុតចំនួន៣កន្លែងក្នុងភ្នំពេញជូនលោកអ្នក។",
+                spokenResponseEnglish = "Battery level is extremely low! I have found three nearest compatible GB/T fast chargers in Phnom Penh for you.",
                 transcribedKhmerText = khmerPrompt
             )
             "AEON_MALL" -> VoiceIntelligenceResult(
@@ -307,6 +340,7 @@ class VoiceIntelligenceViewModel(application: Application) : AndroidViewModel(ap
                 chargerTypeRequired = null,
                 destinationName = "AEON Mall Mean Chey (ផ្សារទំនើបអ៊ីអនមានជ័យ)",
                 spokenResponseKhmer = "ចាស៎ ខ្ញុំកំពុងរៀបចំផ្លូវធ្វើដំណើរទៅកាន់ផ្សារទំនើបអ៊ីអនមានជ័យ ជូនលោកអ្នកឥឡូវនេះ។",
+                spokenResponseEnglish = "Sure thing! Setting up turn-by-turn navigation route to AEON Mall Mean Chey for you.",
                 transcribedKhmerText = khmerPrompt
             )
             else -> VoiceIntelligenceResult(
@@ -314,6 +348,7 @@ class VoiceIntelligenceViewModel(application: Application) : AndroidViewModel(ap
                 chargerTypeRequired = null,
                 destinationName = null,
                 spokenResponseKhmer = "សុំទោសចាស៎ ខ្ញុំអាចជួយលោកអ្នកស្វែងរកកន្លែងសាកថ្ម GB/T ឬរៀបចំផ្លូវធ្វើដំណើរក្នុងទីក្រុងភ្នំពេញប៉ុណ្ណោះ។",
+                spokenResponseEnglish = "I am sorry, I can only assist with finding compatible local GB/T EV-charging stations or routes in Phnom Penh.",
                 transcribedKhmerText = khmerPrompt
             )
         }

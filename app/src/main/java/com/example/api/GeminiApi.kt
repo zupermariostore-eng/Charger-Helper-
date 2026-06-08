@@ -61,6 +61,7 @@ data class VoiceIntelligenceResult(
     @Json(name = "charger_type_required") val chargerTypeRequired: String? = null, // "GB/T" | null
     @Json(name = "destination_name") val destinationName: String? = null,
     @Json(name = "spoken_response_khmer") val spokenResponseKhmer: String,
+    @Json(name = "spoken_response_english") val spokenResponseEnglish: String? = null,
     @Json(name = "transcribed_khmer_text") val transcribedKhmerText: String
 )
 

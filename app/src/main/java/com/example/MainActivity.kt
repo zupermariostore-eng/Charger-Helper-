@@ -95,6 +95,8 @@ fun DeepalCockpitScreen(
     val voiceState by viewModel.voiceState.collectAsState()
     val isRecording by viewModel.isRecording.collectAsState()
     val isDemoMode by viewModel.isDemoMode.collectAsState()
+    val isKhmerTtsSupported by viewModel.isKhmerTtsSupported.collectAsState()
+    val voiceLanguagePref by viewModel.voiceLanguagePref.collectAsState()
 
     // Vehicle Telemetry
     val speed by viewModel.speed.collectAsState()
@@ -189,23 +191,26 @@ fun DeepalCockpitScreen(
                 }
             }
         }
-        // --- 2. MULTI-COLUMN CONSOLE PANELS (Responsive Layout) ---
+
+        // --- 2. MULTI-COLUMN CONSOLE PANELS (Highly Responsive Layout) ---
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
         ) {
-            val isWide = maxWidth >= 760.dp
+            val isWidescreenLandscape = maxWidth >= 950.dp && maxHeight >= 480.dp
+            val isMediumTablet = maxWidth >= 650.dp && maxWidth < 950.dp && maxHeight >= 480.dp
 
-            if (isWide) {
+            if (isWidescreenLandscape) {
+                // Large Cockpit: Widescreen Landscape EV Dashboard (3 columns)
                 Row(
                     modifier = Modifier.fillMaxSize(),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    // LEFT COLUMN: Vehicle Controls & Voice Console
+                    // Column 1 (Left): Driving instrumentation & command inputs (closest to driver's view)
                     Column(
                         modifier = Modifier
-                            .weight(1f)
+                            .weight(1.1f)
                             .fillMaxHeight()
                     ) {
                         TelemetryPanelCard(
@@ -216,14 +221,54 @@ fun DeepalCockpitScreen(
                             onCheckedChange = { viewModel.setDriveSimulationActive(it) },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(bottom = 12.dp)
+                                .weight(1.1f)
                         )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        PresetCommandsPanelCard(
+                            voiceState = voiceState,
+                            onPresetClick = { type, query ->
+                                viewModel.sendPresetCommand(type, query)
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                        )
+                    }
 
+                    // Column 2 (Center): Primary dynamic navigation map (takes visual center stage)
+                    Column(
+                        modifier = Modifier
+                            .weight(1.5f)
+                            .fillMaxHeight()
+                    ) {
+                        PhnomPenhVirtualMapCard(
+                            landmarks = viewModel.landmarks,
+                            selectedLandmark = selectedLandmark,
+                            isNavigating = isNavigating,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+
+                    // Column 3 (Right): Voice Intelligent System & Advanced Session JSON Logs
+                    Column(
+                        modifier = Modifier
+                            .weight(1.2f)
+                            .fillMaxHeight()
+                    ) {
                         VoiceIntelligenceCard(
                             voiceState = voiceState,
                             isRecording = isRecording,
                             isDemoMode = isDemoMode,
                             hasMicPermission = hasMicPermission,
+                            isKhmerTtsSupported = isKhmerTtsSupported,
+                            voiceLanguagePref = voiceLanguagePref,
+                            onVoiceLanguagePrefChange = { viewModel.setVoiceLanguagePref(it) },
+                            onReplayVoice = {
+                                val successResult = (voiceState as? VoiceState.Success)?.result
+                                if (successResult != null) {
+                                    viewModel.speak(successResult)
+                                }
+                            },
                             onMicToggle = {
                                 if (isRecording) {
                                     viewModel.stopMicRecording()
@@ -238,39 +283,109 @@ fun DeepalCockpitScreen(
                             onDemoModeToggle = { viewModel.setDemoModeActive(!isDemoMode) },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .weight(1f)
+                                .weight(1.4f)
                         )
-                    }
-
-                    // RIGHT COLUMN: Clean Map & Preset Commands Panel
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
-                    ) {
-                        PhnomPenhVirtualMapCard(
-                            landmarks = viewModel.landmarks,
-                            selectedLandmark = selectedLandmark,
-                            isNavigating = isNavigating,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1.3f)
-                                .padding(bottom = 12.dp)
-                        )
-
-                        PresetCommandsPanelCard(
+                        Spacer(modifier = Modifier.height(12.dp))
+                        CognitiveConsoleCard(
                             voiceState = voiceState,
-                            onPresetClick = { type, query ->
-                                viewModel.sendPresetCommand(type, query)
-                            },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .weight(1f)
+                                .weight(0.9f)
                         )
                     }
                 }
+            } else if (isMediumTablet) {
+                // Medium Landscape Tablet / Large Portait Grid (2 columns + bottom console)
+                Column(modifier = Modifier.fillMaxSize()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                        ) {
+                            TelemetryPanelCard(
+                                speed = speed,
+                                batteryRef = batteryRef,
+                                rangeRef = rangeRef,
+                                isSimulatingDrive = isSimulatingDrive,
+                                onCheckedChange = { viewModel.setDriveSimulationActive(it) },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f)
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            VoiceIntelligenceCard(
+                                voiceState = voiceState,
+                                isRecording = isRecording,
+                                isDemoMode = isDemoMode,
+                                hasMicPermission = hasMicPermission,
+                                isKhmerTtsSupported = isKhmerTtsSupported,
+                                voiceLanguagePref = voiceLanguagePref,
+                                onVoiceLanguagePrefChange = { viewModel.setVoiceLanguagePref(it) },
+                                onReplayVoice = {
+                                    val successResult = (voiceState as? VoiceState.Success)?.result
+                                    if (successResult != null) {
+                                        viewModel.speak(successResult)
+                                    }
+                                },
+                                onMicToggle = {
+                                    if (isRecording) {
+                                        viewModel.stopMicRecording()
+                                    } else {
+                                        if (hasMicPermission) {
+                                            viewModel.startMicRecording()
+                                        } else {
+                                            requestPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                                        }
+                                    }
+                                },
+                                onDemoModeToggle = { viewModel.setDemoModeActive(!isDemoMode) },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1.8f)
+                            )
+                        }
+
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                        ) {
+                            PhnomPenhVirtualMapCard(
+                                landmarks = viewModel.landmarks,
+                                selectedLandmark = selectedLandmark,
+                                isNavigating = isNavigating,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1.4f)
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            PresetCommandsPanelCard(
+                                voiceState = voiceState,
+                                onPresetClick = { type, query ->
+                                    viewModel.sendPresetCommand(type, query)
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    CognitiveConsoleCard(
+                        voiceState = voiceState,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(110.dp)
+                    )
+                }
             } else {
-                // Compact Screen Layout
+                // Compact Screen Layout / Phones (Clean single vertical scrollable Column to avoid clipping on smaller ports)
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -291,6 +406,15 @@ fun DeepalCockpitScreen(
                         isRecording = isRecording,
                         isDemoMode = isDemoMode,
                         hasMicPermission = hasMicPermission,
+                        isKhmerTtsSupported = isKhmerTtsSupported,
+                        voiceLanguagePref = voiceLanguagePref,
+                        onVoiceLanguagePrefChange = { viewModel.setVoiceLanguagePref(it) },
+                        onReplayVoice = {
+                            val successResult = (voiceState as? VoiceState.Success)?.result
+                            if (successResult != null) {
+                                viewModel.speak(successResult)
+                            }
+                        },
                         onMicToggle = {
                             if (isRecording) {
                                 viewModel.stopMicRecording()
@@ -324,103 +448,115 @@ fun DeepalCockpitScreen(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(300.dp)
+                            .height(280.dp)
+                    )
+
+                    CognitiveConsoleCard(
+                        voiceState = voiceState,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(150.dp)
                     )
                 }
             }
         }
+    }
+}
 
-        // --- 3. DEVELOPMENT LOGS CONSOLE ---
-        Spacer(modifier = Modifier.height(12.dp))
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(130.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            shape = RoundedCornerShape(20.dp),
-            border = BorderStroke(1.dp, Color(0xFFE1E2EC))
-        ) {
-            Column(modifier = Modifier.padding(10.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+@Composable
+fun CognitiveConsoleCard(
+    voiceState: VoiceState,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val clipboardManager = LocalClipboardManager.current
+
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(20.dp),
+        border = BorderStroke(1.dp, Color(0xFFE1E2EC))
+    ) {
+        Column(modifier = Modifier.padding(10.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "APPLICATION CONSOLE / COGNITIVE JSON LOGS",
+                    color = Color(0xFF0061A4),
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Monospace,
+                    letterSpacing = 1.sp
+                )
+
+                // Actions
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        "APPLICATION CONSOLE / COGNITIVE JSON LOGS",
+                        text = "Copy JSON",
                         color = Color(0xFF0061A4),
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = FontFamily.Monospace,
-                        letterSpacing = 1.sp
-                    )
-
-                    // Actions
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(
-                            text = "Copy JSON",
-                            color = Color(0xFF0061A4),
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Black,
-                            modifier = Modifier
-                                .clickable {
-                                    val currentResult = (voiceState as? VoiceState.Success)?.result
-                                    if (currentResult != null) {
-                                        val mockJson = """
-                                        {
-                                          "intent": "${currentResult.intent}",
-                                          "charger_type_required": ${if (currentResult.chargerTypeRequired != null) "\"${currentResult.chargerTypeRequired}\"" else "null"},
-                                          "destination_name": ${if (currentResult.destinationName != null) "\"${currentResult.destinationName}\"" else "null"},
-                                          "spoken_response_khmer": "${currentResult.spokenResponseKhmer}",
-                                          "transcribed_khmer_text": "${currentResult.transcribedKhmerText}"
-                                        }
-                                        """.trimIndent()
-                                        clipboardManager.setText(AnnotatedString(mockJson))
-                                        Toast.makeText(context, "Telemetry JSON copied to Clipboard!", Toast.LENGTH_SHORT).show()
-                                    } else {
-                                        Toast.makeText(context, "No successful voice result logged yet", Toast.LENGTH_SHORT).show()
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Black,
+                        modifier = Modifier
+                            .clickable {
+                                val currentResult = (voiceState as? VoiceState.Success)?.result
+                                if (currentResult != null) {
+                                    val mockJson = """
+                                    {
+                                      "intent": "${currentResult.intent}",
+                                      "charger_type_required": ${if (currentResult.chargerTypeRequired != null) "\"${currentResult.chargerTypeRequired}\"" else "null"},
+                                      "destination_name": ${if (currentResult.destinationName != null) "\"${currentResult.destinationName}\"" else "null"},
+                                      "spoken_response_khmer": "${currentResult.spokenResponseKhmer}",
+                                      "transcribed_khmer_text": "${currentResult.transcribedKhmerText}"
                                     }
+                                    """.trimIndent()
+                                    clipboardManager.setText(AnnotatedString(mockJson))
+                                    Toast.makeText(context, "Telemetry JSON copied to Clipboard!", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    Toast.makeText(context, "No successful voice result logged yet", Toast.LENGTH_SHORT).show()
                                 }
-                                .padding(2.dp)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(6.dp))
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color(0xFFF8F9FF), RoundedCornerShape(10.dp))
-                        .border(1.dp, Color(0xFFE1E2EC), RoundedCornerShape(10.dp))
-                        .padding(8.dp)
-                        .verticalScroll(rememberScrollState())
-                ) {
-                    val activeResult = (voiceState as? VoiceState.Success)?.result
-                    if (activeResult != null) {
-                        Text(
-                            text = """
-                            {
-                              "intent": "${activeResult.intent}",
-                              "charger_type_required": ${if (activeResult.chargerTypeRequired != null) "\"${activeResult.chargerTypeRequired}\"" else "null"},
-                              "destination_name": ${if (activeResult.destinationName != null) "\"${activeResult.destinationName}\"" else "null"},
-                              "spoken_response_khmer": "${activeResult.spokenResponseKhmer}",
-                              "transcribed_khmer_text": "${activeResult.transcribedKhmerText}"
                             }
-                            """.trimIndent(),
-                            color = Color(0xFF1B1B1F),
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 10.sp,
-                            modifier = Modifier.testTag("copied_json_console")
-                        )
-                    } else {
-                        Text(
-                            text = ">> Standby. Start driving or trigger a Khmer voice input above to parse vehicle response metrics...",
-                            color = Color(0xFF44474E),
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 10.sp
-                        )
-                    }
+                            .padding(2.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFFF8F9FF), RoundedCornerShape(10.dp))
+                    .border(1.dp, Color(0xFFE1E2EC), RoundedCornerShape(10.dp))
+                    .padding(8.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                val activeResult = (voiceState as? VoiceState.Success)?.result
+                if (activeResult != null) {
+                    Text(
+                        text = """
+                        {
+                          "intent": "${activeResult.intent}",
+                          "charger_type_required": ${if (activeResult.chargerTypeRequired != null) "\"${activeResult.chargerTypeRequired}\"" else "null"},
+                          "destination_name": ${if (activeResult.destinationName != null) "\"${activeResult.destinationName}\"" else "null"},
+                          "spoken_response_khmer": "${activeResult.spokenResponseKhmer}",
+                          "transcribed_khmer_text": "${activeResult.transcribedKhmerText}"
+                        }
+                        """.trimIndent(),
+                        color = Color(0xFF1B1B1F),
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 10.sp,
+                        modifier = Modifier.testTag("copied_json_console")
+                    )
+                } else {
+                    Text(
+                        text = ">> Standby. Start driving or trigger a Khmer voice input above to parse vehicle response metrics...",
+                        color = Color(0xFF44474E),
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 10.sp
+                    )
                 }
             }
         }
@@ -589,6 +725,10 @@ fun VoiceIntelligenceCard(
     isRecording: Boolean,
     isDemoMode: Boolean,
     hasMicPermission: Boolean,
+    isKhmerTtsSupported: Boolean,
+    voiceLanguagePref: String,
+    onVoiceLanguagePrefChange: (String) -> Unit,
+    onReplayVoice: () -> Unit,
     onMicToggle: () -> Unit,
     onDemoModeToggle: () -> Unit,
     modifier: Modifier = Modifier
@@ -641,12 +781,12 @@ fun VoiceIntelligenceCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             // Pulsing Minimalist Blue Speech Orb Panel
             Box(
                 contentAlignment = Alignment.Center,
-                modifier = Modifier.size(110.dp)
+                modifier = Modifier.size(100.dp)
             ) {
                 // Infinite Pulsing Ripple Effects using InfiniteTransition
                 val infiniteTransition = rememberInfiniteTransition(label = "speech_ripple")
@@ -691,7 +831,7 @@ fun VoiceIntelligenceCard(
                 if (isRecording || voiceState is VoiceState.Processing) {
                     Box(
                         modifier = Modifier
-                            .size(100.dp)
+                            .size(90.dp)
                             .scale(rippleScale1)
                             .background(
                                 Brush.radialGradient(
@@ -703,7 +843,7 @@ fun VoiceIntelligenceCard(
                     )
                     Box(
                         modifier = Modifier
-                            .size(100.dp)
+                            .size(90.dp)
                             .scale(rippleScale2)
                             .background(
                                 Brush.radialGradient(
@@ -719,7 +859,7 @@ fun VoiceIntelligenceCard(
                 Button(
                     onClick = onMicToggle,
                     modifier = Modifier
-                        .size(82.dp)
+                        .size(76.dp)
                         .testTag("microphone_button"),
                     shape = CircleShape,
                     colors = ButtonDefaults.buttonColors(
@@ -736,12 +876,12 @@ fun VoiceIntelligenceCard(
                         imageVector = if (isRecording) Icons.Default.Close else Icons.Default.Call,
                         contentDescription = "Toggle Recording Microphone",
                         tint = if (isRecording || voiceState is VoiceState.Processing) Color.White else Color(0xFF0061A4),
-                        modifier = Modifier.size(36.dp)
+                        modifier = Modifier.size(32.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             // Mic Status Subtitles
             Text(
@@ -759,12 +899,71 @@ fun VoiceIntelligenceCard(
                     is VoiceState.Error -> Color(0xFFBA1A1A)
                     else -> Color(0xFF44474E)
                 },
-                fontSize = 12.sp,
+                fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.testTag("microphone_status")
             )
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Bilingual Voice Output Settings segment selector
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "AI SPEECH FALLBACK",
+                    color = Color(0xFF44474E),
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    val opts = listOf("AUTO", "KHMER", "ENGLISH")
+                    opts.forEach { opt ->
+                        val isSel = voiceLanguagePref == opt
+                        val label = when (opt) {
+                            "AUTO" -> "Auto 🌐"
+                            "KHMER" -> "Khmer 🇰🇭"
+                            else -> "Eng 🇬🇧"
+                        }
+                        Box(
+                            modifier = Modifier
+                                .background(
+                                    if (isSel) Color(0xFF0061A4) else Color(0xFFE1E2EC),
+                                    RoundedCornerShape(6.dp)
+                                )
+                                .clickable { onVoiceLanguagePrefChange(opt) }
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = label,
+                                color = if (isSel) Color.White else Color(0xFF1B1B1F),
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
+
+            if (!isKhmerTtsSupported && voiceLanguagePref == "AUTO") {
+                Text(
+                    text = "System lacks Khmer speech engine. Auto-falling back to clear English voice readout.",
+                    color = Color(0xFF0061A4),
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Medium,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
 
             // Transcripts HUD Panel - Baby Blue background (#D1E4FF)
             Column(
@@ -773,7 +972,7 @@ fun VoiceIntelligenceCard(
                     .weight(1f)
                     .background(Color(0xFFD1E4FF), RoundedCornerShape(20.dp))
                     .border(1.dp, Color(0xFF0061A4).copy(alpha = 0.1f), RoundedCornerShape(20.dp))
-                    .padding(14.dp),
+                    .padding(12.dp),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -782,20 +981,56 @@ fun VoiceIntelligenceCard(
                         Text(
                             text = "“ ${state.result.transcribedKhmerText} ”",
                             color = Color(0xFF0061A4),
-                            fontSize = 18.sp,
+                            fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
                             textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(bottom = 6.dp).testTag("transcription_result")
+                            modifier = Modifier.padding(bottom = 4.dp).testTag("transcription_result")
                         )
                         HorizontalDivider(color = Color(0x330061A4), thickness = 1.dp)
+                        
                         Text(
                             text = state.result.spokenResponseKhmer,
                             color = Color(0xFF1B1B1F),
-                            fontSize = 14.sp,
+                            fontSize = 13.sp,
                             fontWeight = FontWeight.Medium,
                             textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(top = 10.dp).testTag("spoken_text_result")
+                            modifier = Modifier.padding(top = 6.dp).testTag("spoken_text_result")
                         )
+
+                        state.result.spokenResponseEnglish?.let { eng ->
+                            Text(
+                                text = "EN: $eng",
+                                color = Color(0xFF44474E),
+                                fontSize = 11.sp,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(top = 2.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier
+                                .background(Color.White.copy(alpha = 0.6f), RoundedCornerShape(10.dp))
+                                .clickable { onReplayVoice() }
+                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = "Replay Voice Command Response",
+                                tint = Color(0xFF0061A4),
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = "REPLAY AUDIO RESPONSE",
+                                color = Color(0xFF0061A4),
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Black,
+                                letterSpacing = 0.5.sp
+                            )
+                        }
                     }
                     is VoiceState.Error -> {
                         Text(

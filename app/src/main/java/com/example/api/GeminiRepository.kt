@@ -45,16 +45,17 @@ class GeminiRepository {
             CRITICAL ELECTRICAL VEHICLE CONTEXT:
             The vehicle is a Chinese domestic market model. Therefore, it requires the "GB/T" charging standard, NOT the European "CCS2" standard prevalent in Cambodia. Whenever the user's intent is to find a charger, you must strictly output "GB/T" as the required charger type so the application can filter locations correctly.
 
-            Please determine the user's intent and return a strict JSON response matching this schema:
+             Please determine the user's intent and return a strict JSON response matching this schema:
             {
               "intent": "navigate_ev_charger" | "navigate_general" | "unsupported",
               "charger_type_required": "GB/T" | null,
               "destination_name": "Name of the place in English or Khmer (if intent is navigate_general)" | null,
               "spoken_response_khmer": "Short, friendly Khmer text to reply to the driver (e.g. 'ចាស៎ កំពុងស្វែងរកកន្លែងសាកថ្មប្រភេទ GB/T ជិតបំផុតជូនលោកអ្នក។')",
+              "spoken_response_english": "Clear, friendly English translation of the Khmer response for voice guidance fallback (e.g. 'Sure! Searching for the nearest GB/T charging station for you.')",
               "transcribed_khmer_text": "The exact Khmer text for app UI feedback (e.g. 'រកកន្លែងសាកថ្មឡាន' or 'ទៅផ្សារទំនើបអ៊ីអន')"
             }
 
-            Be friendly, professional, and strictly conversational in 'spoken_response_khmer'. Do not use markdown wrappers, codeblocks, or other text outside the JSON.
+            Be friendly, professional, and strictly conversational in 'spoken_response_khmer' and 'spoken_response_english'. Do not use markdown wrappers, codeblocks, or other text outside the JSON.
         """.trimIndent()
 
         val promptText = "Analyze this Khmer speech audio command. If there is a diagnostic hint, prioritize its transcription. Output strictly valid JSON conforming to the schema."
