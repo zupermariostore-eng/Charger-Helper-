@@ -20,7 +20,9 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -70,7 +72,7 @@ class MainActivity : ComponentActivity() {
             MyApplicationTheme {
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
-                    containerColor = Color(0xFFF8F9FF)
+                    containerColor = Color(0xFF0C101B)
                 ) { innerPadding ->
                     DeepalCockpitScreen(
                         viewModel = viewModel,
@@ -131,7 +133,7 @@ fun DeepalCockpitScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFFF8F9FF))
+            .background(Color(0xFF0C101B))
             .padding(16.dp)
     ) {
         // --- 1. SYSTEM TOP STATUS HEADER ---
@@ -146,47 +148,48 @@ fun DeepalCockpitScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = "DEEPAL S05",
-                        color = Color(0xFF1B1B1F),
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Black,
                         fontFamily = FontFamily.SansSerif
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(10.dp))
                     Box(
                         modifier = Modifier
-                            .background(Color(0xFF0061A4), RoundedCornerShape(6.dp))
+                            .background(Color(0xFF00B0FF), RoundedCornerShape(6.dp))
                             .padding(horizontal = 8.dp, vertical = 2.dp)
                     ) {
                         Text(
                             text = "🇨🇳 Chinese Spec • GB/T Only",
-                            color = Color.White,
+                            color = Color.Black,
                             fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Black
                         )
                     }
                 }
                 Text(
                     text = "Phnom Penh, Cambodia",
-                    color = Color(0xFF44474E),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium
+                    color = Color(0xFF8E95A5),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold
                 )
             }
 
             // Gear Position Simulation
             Row(
                 modifier = Modifier
-                    .background(Color(0xFFE1E2EC), RoundedCornerShape(14.dp))
-                    .padding(horizontal = 14.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    .background(Color(0xFF161C2C), RoundedCornerShape(16.dp))
+                    .border(1.dp, Color(0xFF2E3B5E), RoundedCornerShape(16.dp))
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 listOf("P", "R", "N", "D").forEach { gear ->
                     val isActive = if (isSimulatingDrive) gear == "D" else gear == "P"
                     Text(
                         text = gear,
-                        color = if (isActive) Color(0xFF0061A4) else Color(0x731B1B1F),
-                        fontWeight = if (isActive) FontWeight.ExtraBold else FontWeight.Normal,
-                        fontSize = 14.sp
+                        color = if (isActive) Color(0xFF00B0FF) else Color(0x55FFFFFF),
+                        fontWeight = if (isActive) FontWeight.Black else FontWeight.Bold,
+                        fontSize = 16.sp
                     )
                 }
             }
@@ -269,16 +272,15 @@ fun DeepalCockpitScreen(
                                     viewModel.speak(successResult)
                                 }
                             },
-                            onMicToggle = {
-                                if (isRecording) {
-                                    viewModel.stopMicRecording()
+                            onStartRecording = {
+                                if (hasMicPermission) {
+                                    viewModel.startMicRecording()
                                 } else {
-                                    if (hasMicPermission) {
-                                        viewModel.startMicRecording()
-                                    } else {
-                                        requestPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                                    }
+                                    requestPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                                 }
+                            },
+                            onStopRecording = {
+                                viewModel.stopMicRecording()
                             },
                             onDemoModeToggle = { viewModel.setDemoModeActive(!isDemoMode) },
                             modifier = Modifier
@@ -333,16 +335,15 @@ fun DeepalCockpitScreen(
                                         viewModel.speak(successResult)
                                     }
                                 },
-                                onMicToggle = {
-                                    if (isRecording) {
-                                        viewModel.stopMicRecording()
+                                onStartRecording = {
+                                    if (hasMicPermission) {
+                                        viewModel.startMicRecording()
                                     } else {
-                                        if (hasMicPermission) {
-                                            viewModel.startMicRecording()
-                                        } else {
-                                            requestPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                                        }
+                                        requestPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                                     }
+                                },
+                                onStopRecording = {
+                                    viewModel.stopMicRecording()
                                 },
                                 onDemoModeToggle = { viewModel.setDemoModeActive(!isDemoMode) },
                                 modifier = Modifier
@@ -415,16 +416,15 @@ fun DeepalCockpitScreen(
                                 viewModel.speak(successResult)
                             }
                         },
-                        onMicToggle = {
-                            if (isRecording) {
-                                viewModel.stopMicRecording()
+                        onStartRecording = {
+                            if (hasMicPermission) {
+                                viewModel.startMicRecording()
                             } else {
-                                if (hasMicPermission) {
-                                    viewModel.startMicRecording()
-                                } else {
-                                    requestPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                                }
+                                requestPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                             }
+                        },
+                        onStopRecording = {
+                            viewModel.stopMicRecording()
                         },
                         onDemoModeToggle = { viewModel.setDemoModeActive(!isDemoMode) },
                         modifier = Modifier
@@ -473,33 +473,30 @@ fun CognitiveConsoleCard(
 
     Card(
         modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF161C2C)),
         shape = RoundedCornerShape(20.dp),
-        border = BorderStroke(1.dp, Color(0xFFE1E2EC))
+        border = BorderStroke(1.5.dp, Color(0xFF2E3B5E))
     ) {
-        Column(modifier = Modifier.padding(10.dp)) {
+        Column(modifier = Modifier.padding(12.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    "APPLICATION CONSOLE / COGNITIVE JSON LOGS",
-                    color = Color(0xFF0061A4),
+                    "VEHICLE INTELLIGENCE / COGNITIVE LOGS",
+                    color = Color(0xFF00B0FF),
                     fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Black,
                     fontFamily = FontFamily.Monospace,
                     letterSpacing = 1.sp
                 )
 
                 // Actions
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        text = "Copy JSON",
-                        color = Color(0xFF0061A4),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Black,
+                    Box(
                         modifier = Modifier
+                            .background(Color(0xFF1F263E), RoundedCornerShape(6.dp))
                             .clickable {
                                 val currentResult = (voiceState as? VoiceState.Success)?.result
                                 if (currentResult != null) {
@@ -513,23 +510,30 @@ fun CognitiveConsoleCard(
                                     }
                                     """.trimIndent()
                                     clipboardManager.setText(AnnotatedString(mockJson))
-                                    Toast.makeText(context, "Telemetry JSON copied to Clipboard!", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "Telemetry JSON copied!", Toast.LENGTH_SHORT).show()
                                 } else {
                                     Toast.makeText(context, "No successful voice result logged yet", Toast.LENGTH_SHORT).show()
                                 }
                             }
-                            .padding(2.dp)
-                    )
+                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = "COPY JSON",
+                            color = Color.White,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Black
+                        )
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color(0xFFF8F9FF), RoundedCornerShape(10.dp))
-                    .border(1.dp, Color(0xFFE1E2EC), RoundedCornerShape(10.dp))
+                    .background(Color(0xFF0C101B), RoundedCornerShape(10.dp))
+                    .border(1.dp, Color(0xFF2E3B5E), RoundedCornerShape(10.dp))
                     .padding(8.dp)
                     .verticalScroll(rememberScrollState())
             ) {
@@ -545,17 +549,17 @@ fun CognitiveConsoleCard(
                           "transcribed_khmer_text": "${activeResult.transcribedKhmerText}"
                         }
                         """.trimIndent(),
-                        color = Color(0xFF1B1B1F),
+                        color = Color(0xFF00FF87),
                         fontFamily = FontFamily.Monospace,
                         fontSize = 10.sp,
                         modifier = Modifier.testTag("copied_json_console")
                     )
                 } else {
                     Text(
-                        text = ">> Standby. Start driving or trigger a Khmer voice input above to parse vehicle response metrics...",
-                        color = Color(0xFF44474E),
+                        text = ">> Cockpit State: STANDBY. Tap the Mic orb or shift gears to trigger Khmer voice intelligence parameters...",
+                        color = Color(0xFF8E95A5),
                         fontFamily = FontFamily.Monospace,
-                        fontSize = 10.sp
+                        fontSize = 9.sp
                     )
                 }
             }
@@ -574,9 +578,9 @@ fun TelemetryPanelCard(
 ) {
     Card(
         modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF161C2C)),
         shape = RoundedCornerShape(24.dp),
-        border = BorderStroke(1.dp, Color(0xFFE1E2EC))
+        border = BorderStroke(1.5.dp, Color(0xFF2E3B5E))
     ) {
         Column(modifier = Modifier.padding(18.dp)) {
             Row(
@@ -586,53 +590,66 @@ fun TelemetryPanelCard(
             ) {
                 Text(
                     "Live Instrument Panel",
-                    color = Color(0xFF1B1B1F),
+                    color = Color.White,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp
+                    fontSize = 15.sp
                 )
-                // Drive Simulator switch
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = if (isSimulatingDrive) "Driving" else "Parked",
-                        color = if (isSimulatingDrive) Color(0xFF0061A4) else Color(0xFF44474E),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(end = 6.dp)
+
+                // Large Driver Cockpit Gear Selector Button (replaces standard small Switch for standard Car UI look)
+                Button(
+                    onClick = { onCheckedChange(!isSimulatingDrive) },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isSimulatingDrive) Color(0xFFBA1A1A) else Color(0xFF0061A4)
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
+                    modifier = Modifier
+                        .height(44.dp)
+                        .testTag("driver_simulation_switch")
+                ) {
+                    Icon(
+                        imageVector = if (isSimulatingDrive) Icons.Default.Close else Icons.Default.PlayArrow,
+                        contentDescription = "Simulate Drive Control Trigger",
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp)
                     )
-                    Switch(
-                        checked = isSimulatingDrive,
-                        onCheckedChange = onCheckedChange,
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = Color.White,
-                            checkedTrackColor = Color(0xFF0061A4),
-                            uncheckedThumbColor = Color(0xFF44474E),
-                            uncheckedTrackColor = Color(0xFFE1E2EC)
-                        ),
-                        modifier = Modifier.testTag("driver_simulation_switch")
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = if (isSimulatingDrive) "SHIFT TO PARK [P]" else "SHIFT TO DRIVE [D]",
+                        color = Color.White,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Black
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Speed Info
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("CURRENT SPEED", color = Color(0xFF44474E), fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                // Speed Info Block
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .background(Color(0xFF1F263E), RoundedCornerShape(16.dp))
+                        .padding(vertical = 12.dp, horizontal = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text("CURRENT SPEED", color = Color(0xFF80A2FF), fontSize = 10.sp, fontWeight = FontWeight.Black)
+                    Spacer(modifier = Modifier.height(4.dp))
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text(
                             text = "$speed",
-                            color = Color(0xFF1B1B1F),
-                            fontSize = 32.sp,
+                            color = Color.White,
+                            fontSize = 36.sp,
                             fontWeight = FontWeight.Black,
                             fontFamily = FontFamily.SansSerif
                         )
                         Text(
                             " km/h",
-                            color = Color(0xFF44474E),
+                            color = Color(0xFF8E95A5),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(bottom = 6.dp)
@@ -640,26 +657,34 @@ fun TelemetryPanelCard(
                     }
                 }
 
-                // Battery Info
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("BATTERY STATUS", color = Color(0xFF44474E), fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                // Battery Info Block
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .background(Color(0xFF1F263E), RoundedCornerShape(16.dp))
+                        .padding(vertical = 12.dp, horizontal = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text("BATTERY STATUS", color = Color(0xFF80A2FF), fontSize = 10.sp, fontWeight = FontWeight.Black)
+                    Spacer(modifier = Modifier.height(4.dp))
                     Row(verticalAlignment = Alignment.Bottom) {
                         Icon(
                             imageVector = Icons.Default.Star,
                             contentDescription = "Battery charge icon",
-                            tint = if (batteryRef < 20) Color(0xFFBA1A1A) else Color(0xFF0061A4),
-                            modifier = Modifier.size(24.dp).padding(bottom = 2.dp)
+                            tint = if (batteryRef < 20) Color(0xFFFF5252) else Color(0xFF00FF87),
+                            modifier = Modifier.size(26.dp).padding(bottom = 2.dp)
                         )
+                        Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = "$batteryRef",
-                            color = if (batteryRef < 20) Color(0xFFBA1A1A) else Color(0xFF1B1B1F),
-                            fontSize = 32.sp,
+                            color = if (batteryRef < 20) Color(0xFFFF5252) else Color.White,
+                            fontSize = 36.sp,
                             fontWeight = FontWeight.Black,
                             fontFamily = FontFamily.SansSerif
                         )
                         Text(
                             " %",
-                            color = Color(0xFF44474E),
+                            color = Color(0xFF8E95A5),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(bottom = 6.dp)
@@ -667,20 +692,27 @@ fun TelemetryPanelCard(
                     }
                 }
 
-                // Range Info
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("ESTIMATED RANGE", color = Color(0xFF44474E), fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                // Range Info Block
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .background(Color(0xFF1F263E), RoundedCornerShape(16.dp))
+                        .padding(vertical = 12.dp, horizontal = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text("ESTIMATED RANGE", color = Color(0xFF80A2FF), fontSize = 10.sp, fontWeight = FontWeight.Black)
+                    Spacer(modifier = Modifier.height(4.dp))
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text(
                             text = "$rangeRef",
-                            color = Color(0xFF0061A4),
-                            fontSize = 32.sp,
+                            color = Color(0xFF00B0FF),
+                            fontSize = 36.sp,
                             fontWeight = FontWeight.Black,
                             fontFamily = FontFamily.SansSerif
                         )
                         Text(
                             " km",
-                            color = Color(0xFF44474E),
+                            color = Color(0xFF8E95A5),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(bottom = 6.dp)
@@ -690,25 +722,25 @@ fun TelemetryPanelCard(
             }
 
             if (batteryRef < 30) {
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(14.dp))
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(Color(0xFFFFF0F1), RoundedCornerShape(12.dp))
-                        .border(1.dp, Color(0xFFFFCCD0), RoundedCornerShape(12.dp))
-                        .padding(8.dp)
+                        .background(Color(0xFF5C1D1D), RoundedCornerShape(12.dp))
+                        .border(1.5.dp, Color(0xFFFF5252), RoundedCornerShape(12.dp))
+                        .padding(12.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             imageVector = Icons.Default.Warning,
                             contentDescription = "Warning Low Battery icon",
-                            tint = Color(0xFFBA1A1A),
-                            modifier = Modifier.size(16.dp)
+                            tint = Color(0xFFFF5252),
+                            modifier = Modifier.size(20.dp)
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = "ថ្មឡានជិតអស់ហើយ! ស្នើសុំសាកថ្មជាមួយប្រភេទ GB/T។",
-                            color = Color(0xFFBA1A1A),
+                            color = Color.White,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -729,19 +761,23 @@ fun VoiceIntelligenceCard(
     voiceLanguagePref: String,
     onVoiceLanguagePrefChange: (String) -> Unit,
     onReplayVoice: () -> Unit,
-    onMicToggle: () -> Unit,
+    onStartRecording: () -> Unit,
+    onStopRecording: () -> Unit,
     onDemoModeToggle: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var isHolding by remember { mutableStateOf(false) }
+    var pressStartTime by remember { mutableStateOf(0L) }
+
     Card(
         modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF161C2C)),
         shape = RoundedCornerShape(24.dp),
-        border = BorderStroke(1.dp, Color(0xFFE1E2EC))
+        border = BorderStroke(1.5.dp, Color(0xFF2E3B5E))
     ) {
         Column(
             modifier = Modifier
-                .padding(18.dp)
+                .padding(16.dp)
                 .fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -752,49 +788,49 @@ fun VoiceIntelligenceCard(
             ) {
                 Text(
                     "Deepal Voice Assistant",
-                    color = Color(0xFF1B1B1F),
+                    color = Color.White,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp
+                    fontSize = 15.sp
                 )
 
-                // Demo / Live API Selector Badge
+                // Large Demo Mode toggle
                 Box(
                     modifier = Modifier
                         .background(
-                            if (isDemoMode) Color(0xFFE1E2EC) else Color(0xFFD1E4FF),
+                            if (isDemoMode) Color(0xFF1F263E) else Color(0x3300B0FF),
                             RoundedCornerShape(8.dp)
                         )
                         .border(
                             1.dp,
-                            if (isDemoMode) Color(0xFFBCBFCD) else Color(0xFF0061A4),
+                            if (isDemoMode) Color(0xFF2E3B5E) else Color(0xFF00B0FF),
                             RoundedCornerShape(8.dp)
                         )
                         .clickable { onDemoModeToggle() }
-                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
                 ) {
                     Text(
-                        text = if (isDemoMode) "Demo Engine Active" else "Live Gemini API Beta",
-                        color = if (isDemoMode) Color(0xFF1B1B1F) else Color(0xFF0061A4),
+                        text = if (isDemoMode) "Local Demo Engine" else "Gemini AI Live 🌐",
+                        color = if (isDemoMode) Color(0xFF8E95A5) else Color(0xFF00B0FF),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-            // Pulsing Minimalist Blue Speech Orb Panel
+            // MASSIVE Driver-Optimized Pulsing Mic Orb Frame
             Box(
                 contentAlignment = Alignment.Center,
-                modifier = Modifier.size(100.dp)
+                modifier = Modifier.size(120.dp)
             ) {
                 // Infinite Pulsing Ripple Effects using InfiniteTransition
                 val infiniteTransition = rememberInfiniteTransition(label = "speech_ripple")
                 val rippleScale1 by infiniteTransition.animateFloat(
                     initialValue = 1f,
-                    targetValue = 1.6f,
+                    targetValue = 1.7f,
                     animationSpec = infiniteRepeatable(
-                        animation = tween(1400, easing = LinearEasing),
+                        animation = tween(1200, easing = LinearEasing),
                         repeatMode = RepeatMode.Restart
                     ),
                     label = "scale1"
@@ -803,7 +839,7 @@ fun VoiceIntelligenceCard(
                     initialValue = 0.6f,
                     targetValue = 0f,
                     animationSpec = infiniteRepeatable(
-                        animation = tween(1400, easing = LinearEasing),
+                        animation = tween(1200, easing = LinearEasing),
                         repeatMode = RepeatMode.Restart
                     ),
                     label = "alpha1"
@@ -811,9 +847,9 @@ fun VoiceIntelligenceCard(
 
                 val rippleScale2 by infiniteTransition.animateFloat(
                     initialValue = 1f,
-                    targetValue = 2.0f,
+                    targetValue = 2.1f,
                     animationSpec = infiniteRepeatable(
-                        animation = tween(2000, easing = FastOutSlowInEasing),
+                        animation = tween(1800, easing = FastOutSlowInEasing),
                         repeatMode = RepeatMode.Restart
                     ),
                     label = "scale2"
@@ -822,7 +858,7 @@ fun VoiceIntelligenceCard(
                     initialValue = 0.4f,
                     targetValue = 0f,
                     animationSpec = infiniteRepeatable(
-                        animation = tween(2000, easing = FastOutSlowInEasing),
+                        animation = tween(1800, easing = FastOutSlowInEasing),
                         repeatMode = RepeatMode.Restart
                     ),
                     label = "alpha2"
@@ -831,11 +867,11 @@ fun VoiceIntelligenceCard(
                 if (isRecording || voiceState is VoiceState.Processing) {
                     Box(
                         modifier = Modifier
-                            .size(90.dp)
+                            .size(100.dp)
                             .scale(rippleScale1)
                             .background(
                                 Brush.radialGradient(
-                                    colors = listOf(Color(0x3D0061A4), Color.Transparent)
+                                    colors = listOf(Color(0x5600B0FF), Color.Transparent)
                                 ),
                                 shape = CircleShape
                             )
@@ -843,11 +879,11 @@ fun VoiceIntelligenceCard(
                     )
                     Box(
                         modifier = Modifier
-                            .size(90.dp)
+                            .size(100.dp)
                             .scale(rippleScale2)
                             .background(
                                 Brush.radialGradient(
-                                    colors = listOf(Color(0x240061A4), Color.Transparent)
+                                    colors = listOf(Color(0x3800B0FF), Color.Transparent)
                                 ),
                                 shape = CircleShape
                             )
@@ -855,74 +891,124 @@ fun VoiceIntelligenceCard(
                     )
                 }
 
-                // Clean Mic Trigger button
-                Button(
-                    onClick = onMicToggle,
+                // GIGANTIC SLAP-TO-CLICK MICROPHONE KEY (Huge 92dp circle with PTT gestures!)
+                Box(
                     modifier = Modifier
-                        .size(76.dp)
-                        .testTag("microphone_button"),
-                    shape = CircleShape,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = when {
-                            isRecording -> Color(0xFFBA1A1A)
-                            voiceState is VoiceState.Processing -> Color(0xFF0061A4)
-                            else -> Color(0xFFE1E2EC)
+                        .size(92.dp)
+                        .testTag("microphone_button")
+                        .pointerInput(hasMicPermission, isRecording, voiceState) {
+                            detectTapGestures(
+                                onPress = {
+                                    val wasRecordingBeforePress = isRecording
+                                    pressStartTime = System.currentTimeMillis()
+                                    isHolding = true
+
+                                    if (voiceState !is VoiceState.Processing) {
+                                        if (!wasRecordingBeforePress) {
+                                            onStartRecording()
+                                        }
+                                    }
+
+                                    val isReleased = try {
+                                        awaitRelease()
+                                        true
+                                    } catch (e: Exception) {
+                                        false
+                                    }
+
+                                    isHolding = false
+                                    val duration = System.currentTimeMillis() - pressStartTime
+                                    if (isReleased && duration > 400) {
+                                        // PTT Held release -> stop recording immediately on let go
+                                        if (isRecording || !wasRecordingBeforePress) {
+                                            onStopRecording()
+                                        }
+                                    }
+                                },
+                                onTap = {
+                                    if (isRecording) {
+                                        onStopRecording()
+                                    }
+                                }
+                            )
                         }
-                    ),
-                    contentPadding = PaddingValues(0.dp),
-                    border = BorderStroke(2.dp, Color(0xFF0061A4))
+                        .clip(CircleShape)
+                        .background(
+                            brush = Brush.radialGradient(
+                                colors = when {
+                                    isRecording -> listOf(Color(0xFFFF3B30), Color(0xFFC30010))
+                                    voiceState is VoiceState.Processing -> listOf(Color(0xFF00B0FF), Color(0xFF0061A4))
+                                    else -> listOf(Color(0xFF1F263E), Color(0xFF121824))
+                                }
+                            )
+                        )
+                        .border(
+                            BorderStroke(
+                                if (isRecording) 3.dp else 2.dp,
+                                if (isRecording) Color(0xFFFF5252) else Color(0xFF00B0FF)
+                            ),
+                            CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = if (isRecording) Icons.Default.Close else Icons.Default.Call,
+                        imageVector = if (isRecording) Icons.Default.Close else Icons.Default.Mic,
                         contentDescription = "Toggle Recording Microphone",
-                        tint = if (isRecording || voiceState is VoiceState.Processing) Color.White else Color(0xFF0061A4),
-                        modifier = Modifier.size(32.dp)
+                        tint = Color.White,
+                        modifier = Modifier.size(40.dp)
                     )
                 }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Mic Status Subtitles
+            // Highly Visible Status HUD Subtitle
             Text(
                 text = when (voiceState) {
-                    is VoiceState.Idle -> "Tap Microphone to Speak Khmer"
-                    is VoiceState.Recording -> "LISTENING... Speak Khmer"
-                    is VoiceState.Processing -> "EXTRACTING INTENT..."
-                    is VoiceState.Success -> "CMD SUCCESSFUL"
-                    is VoiceState.Error -> "SYSTEM OVERLOAD"
+                    is VoiceState.Idle -> {
+                        if (isHolding) "🎙️ PTT LISTENING..." else "TAP TO TOGGLE • HOLD TO SPEAK"
+                    }
+                    is VoiceState.Recording -> {
+                        if (isHolding) "🎙️ HOLDING... RELEASE TO SEND" else "🎙️ RECORDING... TAP TO TRANSMIT"
+                    }
+                    is VoiceState.Processing -> "🤖 DECODING DRIVER COMMANDS..."
+                    is VoiceState.Success -> "⚡ COGNITIVE MATCH SUCCESSFUL"
+                    is VoiceState.Error -> "🚨 CRITICAL DIALECT MISMATCH"
                 },
                 color = when (voiceState) {
-                    is VoiceState.Recording -> Color(0xFFBA1A1A)
-                    is VoiceState.Processing -> Color(0xFF0061A4)
-                    is VoiceState.Success -> Color(0xFF0061A4)
-                    is VoiceState.Error -> Color(0xFFBA1A1A)
-                    else -> Color(0xFF44474E)
+                    is VoiceState.Recording -> Color(0xFFFF5252)
+                    is VoiceState.Processing -> Color(0xFF00B0FF)
+                    is VoiceState.Success -> Color(0xFF00FF87)
+                    is VoiceState.Error -> Color(0xFFFF5252)
+                    else -> Color(0xFF8E95A5)
                 },
                 fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.Black,
                 modifier = Modifier.testTag("microphone_status")
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-            // Bilingual Voice Output Settings segment selector
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = "AI SPEECH FALLBACK",
-                    color = Color(0xFF44474E),
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold
-                )
+            // Huge In-Car Language Selector segment selector spanning full width
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "AI SPEECH READOUT FALLBACK",
+                        color = Color(0xFF8E95A5),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
 
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     val opts = listOf("AUTO", "KHMER", "ENGLISH")
                     opts.forEach { opt ->
@@ -934,17 +1020,24 @@ fun VoiceIntelligenceCard(
                         }
                         Box(
                             modifier = Modifier
+                                .weight(1f)
+                                .height(46.dp)
                                 .background(
-                                    if (isSel) Color(0xFF0061A4) else Color(0xFFE1E2EC),
-                                    RoundedCornerShape(6.dp)
+                                    if (isSel) Color(0xFF0061A4) else Color(0xFF1F263E),
+                                    RoundedCornerShape(10.dp)
                                 )
-                                .clickable { onVoiceLanguagePrefChange(opt) }
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                                .border(
+                                    1.dp,
+                                    if (isSel) Color(0xFF00B0FF) else Color(0xFF2E3B5E),
+                                    RoundedCornerShape(10.dp)
+                                )
+                                .clickable { onVoiceLanguagePrefChange(opt) },
+                            contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 text = label,
-                                color = if (isSel) Color.White else Color(0xFF1B1B1F),
-                                fontSize = 10.sp,
+                                color = Color.White,
+                                fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -955,7 +1048,7 @@ fun VoiceIntelligenceCard(
             if (!isKhmerTtsSupported && voiceLanguagePref == "AUTO") {
                 Text(
                     text = "System lacks Khmer speech engine. Auto-falling back to clear English voice readout.",
-                    color = Color(0xFF0061A4),
+                    color = Color(0xFF00B0FF),
                     fontSize = 9.sp,
                     fontWeight = FontWeight.Medium,
                     textAlign = TextAlign.Center,
@@ -963,16 +1056,16 @@ fun VoiceIntelligenceCard(
                 )
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // Transcripts HUD Panel - Baby Blue background (#D1E4FF)
+            // Premium Slate Cockpit HUD transcripts display
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .background(Color(0xFFD1E4FF), RoundedCornerShape(20.dp))
-                    .border(1.dp, Color(0xFF0061A4).copy(alpha = 0.1f), RoundedCornerShape(20.dp))
-                    .padding(12.dp),
+                    .background(Color(0xFF121824), RoundedCornerShape(20.dp))
+                    .border(1.5.dp, Color(0xFF2E3B5E), RoundedCornerShape(20.dp))
+                    .padding(14.dp),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -980,53 +1073,58 @@ fun VoiceIntelligenceCard(
                     is VoiceState.Success -> {
                         Text(
                             text = "“ ${state.result.transcribedKhmerText} ”",
-                            color = Color(0xFF0061A4),
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF00B0FF),
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Black,
                             textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(bottom = 4.dp).testTag("transcription_result")
+                            modifier = Modifier.padding(bottom = 6.dp).testTag("transcription_result")
                         )
-                        HorizontalDivider(color = Color(0x330061A4), thickness = 1.dp)
+                        HorizontalDivider(color = Color(0xFF2E3B5E), thickness = 1.dp)
                         
                         Text(
                             text = state.result.spokenResponseKhmer,
-                            color = Color(0xFF1B1B1F),
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Medium,
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
                             textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(top = 6.dp).testTag("spoken_text_result")
+                            modifier = Modifier.padding(top = 8.dp).testTag("spoken_text_result")
                         )
 
                         state.result.spokenResponseEnglish?.let { eng ->
                             Text(
                                 text = "EN: $eng",
-                                color = Color(0xFF44474E),
+                                color = Color(0xFF8E95A5),
                                 fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
                                 textAlign = TextAlign.Center,
-                                modifier = Modifier.padding(top = 2.dp)
+                                modifier = Modifier.padding(top = 4.dp)
                             )
                         }
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(10.dp))
 
+                        // Large Replay Response Capsule Button
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            horizontalArrangement = Arrangement.Center,
                             modifier = Modifier
-                                .background(Color.White.copy(alpha = 0.6f), RoundedCornerShape(10.dp))
+                                .fillMaxWidth()
+                                .height(46.dp)
+                                .background(Color(0xFF1F263E), RoundedCornerShape(12.dp))
+                                .border(1.dp, Color(0xFF00B0FF), RoundedCornerShape(12.dp))
                                 .clickable { onReplayVoice() }
-                                .padding(horizontal = 12.dp, vertical = 6.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.PlayArrow,
                                 contentDescription = "Replay Voice Command Response",
-                                tint = Color(0xFF0061A4),
-                                modifier = Modifier.size(16.dp)
+                                tint = Color(0xFF00B0FF),
+                                modifier = Modifier.size(20.dp)
                             )
+                            Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "REPLAY AUDIO RESPONSE",
-                                color = Color(0xFF0061A4),
-                                fontSize = 10.sp,
+                                text = "REPLAY AUDIO READOUT",
+                                color = Color.White,
+                                fontSize = 12.sp,
                                 fontWeight = FontWeight.Black,
                                 letterSpacing = 0.5.sp
                             )
@@ -1035,7 +1133,7 @@ fun VoiceIntelligenceCard(
                     is VoiceState.Error -> {
                         Text(
                             text = state.message,
-                            color = Color(0xFFBA1A1A),
+                            color = Color(0xFFFF5252),
                             fontWeight = FontWeight.Bold,
                             fontSize = 13.sp,
                             textAlign = TextAlign.Center,
@@ -1044,27 +1142,27 @@ fun VoiceIntelligenceCard(
                     }
                     is VoiceState.Processing -> {
                         CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            color = Color(0xFF0061A4),
-                            strokeWidth = 2.dp
+                            modifier = Modifier.size(32.dp),
+                            color = Color(0xFF00B0FF),
+                            strokeWidth = 3.dp
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(10.dp))
                         Text(
-                            "MAPPING COGNITIVE TELEMETRY...",
-                            color = Color(0xFF1B1B1F),
-                            fontSize = 9.sp,
+                            "COGNITIVE INTENT MATCHING...",
+                            color = Color(0xFF8E95A5),
+                            fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 1.sp
                         )
                     }
                     else -> {
                         Text(
-                            text = "Try speaking: \"រកកន្លែងសាកថ្មឡាន\" (Find a GB/T Charger) or \"ទៅផ្សារទំនើបអ៊ីអន\" (Navigate to AEON Mall)",
-                            color = Color(0xFF1B1B1F),
-                            fontSize = 12.sp,
+                            text = "Driver Command Prompts:\n\"រកកន្លែងសាកថ្មឡាន\" (Find GB/T Charger)\n\"ទៅផ្សារទំនើបអ៊ីអន\" (Navigate to AEON Mall)",
+                            color = Color.White,
+                            fontSize = 13.sp,
                             fontWeight = FontWeight.Medium,
                             textAlign = TextAlign.Center,
-                            lineHeight = 18.sp
+                            lineHeight = 20.sp
                         )
                     }
                 }
@@ -1083,9 +1181,9 @@ fun PhnomPenhVirtualMapCard(
     val context = LocalContext.current
     Card(
         modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFEDF2FA)),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF161C2C)),
         shape = RoundedCornerShape(24.dp),
-        border = BorderStroke(1.dp, Color(0xFFE1E2EC))
+        border = BorderStroke(1.5.dp, Color(0xFF2E3B5E))
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             PhnomPenhVirtualMap(
@@ -1100,21 +1198,21 @@ fun PhnomPenhVirtualMapCard(
                 modifier = Modifier
                     .padding(12.dp)
                     .align(Alignment.TopStart)
-                    .background(Color.White.copy(alpha = 0.9f), RoundedCornerShape(10.dp))
-                    .border(1.dp, Color(0xFFE1E2EC), RoundedCornerShape(10.dp))
+                    .background(Color(0xFF121824).copy(alpha = 0.9f), RoundedCornerShape(10.dp))
+                    .border(1.dp, Color(0xFF2E3B5E), RoundedCornerShape(10.dp))
                     .padding(horizontal = 10.dp, vertical = 6.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Default.Send,
                         contentDescription = "Compass icon",
-                        tint = Color(0xFF0061A4),
+                        tint = Color(0xFF00B0FF),
                         modifier = Modifier.size(12.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = "COMPASS: PP-AUTO-NET",
-                        color = Color(0xFF1B1B1F),
+                        color = Color.White,
                         fontSize = 8.sp,
                         fontWeight = FontWeight.Bold,
                         fontFamily = FontFamily.Monospace
@@ -1122,16 +1220,16 @@ fun PhnomPenhVirtualMapCard(
                 }
             }
 
-            // Low HUD details overlay
+            // Low HUD details overlay (increased height and buttons touch size for driving comfort)
             if (isNavigating && selectedLandmark != null) {
                 Box(
                     modifier = Modifier
                         .padding(10.dp)
-                        .fillMaxWidth(0.92f)
+                        .fillMaxWidth(0.94f)
                         .align(Alignment.BottomCenter)
-                        .background(Color.White.copy(alpha = 0.95f), RoundedCornerShape(16.dp))
-                        .border(1.dp, Color(0xFF0061A4), RoundedCornerShape(16.dp))
-                        .padding(10.dp)
+                        .background(Color(0xFF121824).copy(alpha = 0.95f), RoundedCornerShape(16.dp))
+                        .border(1.5.dp, Color(0xFF00B0FF), RoundedCornerShape(16.dp))
+                        .padding(12.dp)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -1141,8 +1239,8 @@ fun PhnomPenhVirtualMapCard(
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = "Navigating to: ${selectedLandmark.name}",
-                                color = Color(0xFF1B1B1F),
-                                fontSize = 11.sp,
+                                color = Color.White,
+                                fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
                                 overflow = TextOverflow.Ellipsis,
                                 maxLines = 1
@@ -1153,16 +1251,16 @@ fun PhnomPenhVirtualMapCard(
                                 } else {
                                     "General Route Planned"
                                 },
-                                color = Color(0xFF0061A4),
+                                color = Color(0xFF00B0FF),
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold
                             )
                         }
 
-                        Spacer(modifier = Modifier.width(4.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
 
-                        // Action buttons for Google Maps & Waze
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        // Large Action buttons for Google Maps & Waze (driving comfort target sizes)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Button(
                                 onClick = {
                                     val labelEnc = URLEncoder.encode(selectedLandmark.name, "UTF-8")
@@ -1179,10 +1277,10 @@ fun PhnomPenhVirtualMapCard(
                                 },
                                 shape = RoundedCornerShape(8.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0061A4)),
-                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                                modifier = Modifier.height(28.dp).testTag("google_maps_intent_button")
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                modifier = Modifier.height(34.dp).testTag("google_maps_intent_button")
                             ) {
-                                Text("Maps", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                                Text("Maps", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Black)
                             }
 
                             Button(
@@ -1198,11 +1296,12 @@ fun PhnomPenhVirtualMapCard(
                                     }
                                 },
                                 shape = RoundedCornerShape(8.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE1E2EC)),
-                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                                modifier = Modifier.height(28.dp).testTag("waze_intent_button")
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1F263E)),
+                                border = BorderStroke(1.dp, Color(0xFF2E3B5E)),
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                modifier = Modifier.height(34.dp).testTag("waze_intent_button")
                             ) {
-                                Text("Waze", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                                Text("Waze", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Black)
                             }
                         }
                     }
@@ -1220,75 +1319,113 @@ fun PresetCommandsPanelCard(
 ) {
     Card(
         modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF161C2C)),
         shape = RoundedCornerShape(24.dp),
-        border = BorderStroke(1.dp, Color(0xFFE1E2EC))
+        border = BorderStroke(1.5.dp, Color(0xFF2E3B5E))
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Text(
-                "Simulate Khmer Spoken Inputs",
-                color = Color(0xFF1B1B1F),
+                "Driver Fast Command Shorthands",
+                color = Color.White,
                 fontWeight = FontWeight.Bold,
-                fontSize = 13.sp,
-                modifier = Modifier.padding(bottom = 8.dp)
+                fontSize = 14.sp,
+                modifier = Modifier.padding(bottom = 12.dp)
             )
 
             val speechPresets = listOf(
-                Triple("EV_CHARGER", "រកកន្លែងសាកថ្មឡាន", "Find EV Charger"),
-                Triple("LOW_BATTERY", "ថ្មឡានជិតអស់ហើយ", "Car Battery Low"),
-                Triple("AEON_MALL", "ទៅផ្សារទំនើបអ៊ីអនមានជ័យ", "Navigate: AEON Mall"),
-                Triple("UNSUPPORTED", "អាកាសធាតុថ្ងៃនេះយ៉ាងម៉េចដែរ", "Query Weather (unsupported)")
+                Triple("EV_CHARGER", "រកកន្លែងសាកថ្មឡាន", "Find EV Charger • ⚡ GB/T"),
+                Triple("LOW_BATTERY", "ថ្មឡានជិតអស់ហើយ", "Simulate Low Battery ⚠️"),
+                Triple("AEON_MALL", "ទៅផ្សារទំនើបអ៊ីអនមានជ័យ", "Route to AEON Mall 📍"),
+                Triple("UNSUPPORTED", "អាកាសធាតុថ្ងៃនេះយ៉ាងម៉េចដែរ", "System Help Guide ❓")
             )
 
+            // Adaptive 2x2 grid for standard landscape/tablet centers
             Column(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
             ) {
-                speechPresets.forEach { preset ->
-                    val isSelected = when (val state = voiceState) {
-                        is VoiceState.Success -> state.result.transcribedKhmerText == preset.second
-                        else -> false
-                    }
-
+                speechPresets.chunked(2).forEach { pair ->
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(if (isSelected) Color(0xFFD1E4FF) else Color(0xFFF8F9FF))
-                            .border(
-                                1.dp,
-                                if (isSelected) Color(0xFF0061A4) else Color(0xFFE1E2EC),
-                                RoundedCornerShape(12.dp)
-                            )
-                            .clickable {
-                                onPresetClick(preset.first, preset.second)
-                            }
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = preset.second,
-                                color = Color(0xFF1B1B1F),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp
-                            )
-                            Text(
-                                text = preset.third,
-                                color = Color(0xFF44474E),
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
+                        pair.forEach { preset ->
+                            val isSelected = when (val state = voiceState) {
+                                is VoiceState.Success -> state.result.transcribedKhmerText == preset.second
+                                else -> false
+                            }
+
+                            // Large Tactile driving click block (Huge 78dp target height!)
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(78.dp)
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(if (isSelected) Color(0xFF1F2E52) else Color(0xFF1F263E))
+                                    .border(
+                                        1.5.dp,
+                                        if (isSelected) Color(0xFF00B0FF) else Color(0xFF2E3B5E),
+                                        RoundedCornerShape(14.dp)
+                                    )
+                                    .clickable {
+                                        onPresetClick(preset.first, preset.second)
+                                    }
+                                    .padding(horizontal = 10.dp, vertical = 8.dp),
+                                contentAlignment = Alignment.CenterStart
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    // Huge Icon for fast category scan
+                                    Box(
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .background(
+                                                if (isSelected) Color(0xFF0061A4) else Color(0xFF161C2C),
+                                                CircleShape
+                                            )
+                                            .border(1.dp, Color(0xFF2E3B5E), CircleShape),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = when (preset.first) {
+                                                "EV_CHARGER" -> Icons.Default.LocationOn
+                                                "LOW_BATTERY" -> Icons.Default.Warning
+                                                "AEON_MALL" -> Icons.Default.LocationOn
+                                                else -> Icons.Default.Info
+                                            },
+                                            contentDescription = null,
+                                            tint = if (isSelected) Color.White else Color(0xFF00B0FF),
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+
+                                    Column(
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Text(
+                                            text = preset.second,
+                                            color = Color.White,
+                                            fontWeight = FontWeight.Black,
+                                            fontSize = 12.sp,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        Text(
+                                            text = preset.third,
+                                            color = Color(0xFF8E95A5),
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                }
+                            }
                         }
-                        Icon(
-                            imageVector = Icons.Filled.PlayArrow,
-                            contentDescription = "Trigger Speech preset simulation",
-                            tint = if (isSelected) Color(0xFF0061A4) else Color(0xFF1B1B1F),
-                            modifier = Modifier.size(16.dp)
-                        )
                     }
                 }
             }
