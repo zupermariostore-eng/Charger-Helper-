@@ -3,6 +3,8 @@ package com.example.viewmodel
 import android.app.Application
 import android.content.Context
 import android.speech.tts.TextToSpeech
+import android.media.ToneGenerator
+import android.media.AudioManager
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -19,6 +21,11 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.util.Locale
+import com.example.data.database.AppDatabase
+import com.example.data.database.CachedVoiceCommand
+import com.example.data.database.VoiceCommandRepository
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
 
 sealed class VoiceState {
     object Idle : VoiceState()
@@ -46,6 +53,18 @@ class VoiceIntelligenceViewModel(application: Application) : AndroidViewModel(ap
     private var tts: TextToSpeech? = null
     private var isTtsInitialized = false
 
+    private val cachingRepository: VoiceCommandRepository by lazy {
+        val database = AppDatabase.getDatabase(application)
+        VoiceCommandRepository(database.cachedVoiceCommandDao())
+    }
+
+    val cachedCommands: StateFlow<List<CachedVoiceCommand>> = cachingRepository.frequentlyUsedCommands
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
     // State flows
     private val _voiceState = MutableStateFlow<VoiceState>(VoiceState.Idle)
     val voiceState: StateFlow<VoiceState> = _voiceState.asStateFlow()
@@ -66,6 +85,13 @@ class VoiceIntelligenceViewModel(application: Application) : AndroidViewModel(ap
         _voiceLanguagePref.value = lang
     }
 
+    private val _ttsConfirmationMode = MutableStateFlow("FULL_VOICE") // "FULL_VOICE", "CHIME_ONLY", "DISABLED"
+    val ttsConfirmationMode: StateFlow<String> = _ttsConfirmationMode.asStateFlow()
+
+    fun setTtsConfirmationMode(mode: String) {
+        _ttsConfirmationMode.value = mode
+    }
+
     // Vehicle live parameters
     private val _speed = MutableStateFlow(0)
     val speed: StateFlow<Int> = _speed.asStateFlow()
@@ -78,6 +104,16 @@ class VoiceIntelligenceViewModel(application: Application) : AndroidViewModel(ap
 
     private val _isSimulatingDrive = MutableStateFlow(false)
     val isSimulatingDrive: StateFlow<Boolean> = _isSimulatingDrive.asStateFlow()
+
+    // Climate & Multimedia live states for Driver Quick Actions
+    private val _cabinTemp = MutableStateFlow(22.0f)
+    val cabinTemp: StateFlow<Float> = _cabinTemp.asStateFlow()
+
+    private val _isPlayingMusic = MutableStateFlow(false)
+    val isPlayingMusic: StateFlow<Boolean> = _isPlayingMusic.asStateFlow()
+
+    private val _currentSong = MutableStateFlow("Sra-Srak (Cambodian Jazz Chill)")
+    val currentSong: StateFlow<String> = _currentSong.asStateFlow()
 
     // Map & Navigation state
     private val _selectedLandmark = MutableStateFlow<MapLandmark?>(null)
@@ -145,7 +181,33 @@ class VoiceIntelligenceViewModel(application: Application) : AndroidViewModel(ap
         }
     }
 
+    private fun playChimeTone() {
+        if (_ttsConfirmationMode.value == "DISABLED") return
+        viewModelScope.launch {
+            try {
+                val toneGen = ToneGenerator(AudioManager.STREAM_MUSIC, 85)
+                // ascending positive confirmation beep-beep
+                toneGen.startTone(ToneGenerator.TONE_CDMA_PIP, 120)
+                delay(140)
+                toneGen.startTone(ToneGenerator.TONE_CDMA_PIP, 120)
+            } catch (e: Exception) {
+                Log.e("VoiceIntelligenceVM", "Tone generation failed", e)
+            }
+        }
+    }
+
     fun speak(result: VoiceIntelligenceResult) {
+        val mode = _ttsConfirmationMode.value
+        if (mode == "DISABLED") return
+
+        // Always play chime first
+        playChimeTone()
+
+        if (mode == "CHIME_ONLY") {
+            // Only chime, do not activate TTS spoken voice
+            return
+        }
+
         if (!isTtsInitialized) return
 
         val useKhmer = when (_voiceLanguagePref.value) {
@@ -166,7 +228,11 @@ class VoiceIntelligenceViewModel(application: Application) : AndroidViewModel(ap
             tts?.language = Locale.ENGLISH
         }
 
-        tts?.speak(textToSpeak, TextToSpeech.QUEUE_FLUSH, null, "voice_command_reply")
+        viewModelScope.launch {
+            // Settle chime playback before launching spoken readout
+            delay(320)
+            tts?.speak(textToSpeak, TextToSpeech.QUEUE_FLUSH, null, "voice_command_reply")
+        }
     }
 
     fun setDriveSimulationActive(active: Boolean) {
@@ -176,6 +242,75 @@ class VoiceIntelligenceViewModel(application: Application) : AndroidViewModel(ap
     fun stopNavigation() {
         _isNavigating.value = false
         _selectedLandmark.value = null
+    }
+
+    // Interactive Driver Quick Actions (Bypasses voice pipeline for split-second driving accessibility)
+    fun quickActionNavigateHome() {
+        val homeLandmark = MapLandmark(
+            id = "dest_home_royal",
+            name = "Home Base",
+            nameKh = "គេហដ្ឋាន (Royal Palace)",
+            latitude = 11.5639,
+            longitude = 104.9309,
+            isCharger = false
+        )
+        _selectedLandmark.value = homeLandmark
+        _isNavigating.value = true
+
+        val directResult = VoiceIntelligenceResult(
+            intent = "navigate_general",
+            chargerTypeRequired = null,
+            destinationName = "Home (Royal Palace)",
+            spokenResponseKhmer = "ចាស៎! កំពុងកំណត់ផ្លូវធ្វើដំណើរឆ្ពោះទៅកាន់គេហដ្ឋានរបស់លោកអ្នកដោយសុវត្ថិភាព។",
+            spokenResponseEnglish = "Setting safe GPS navigation to your Home now.",
+            transcribedKhmerText = "រៀបចំផ្លូវត្រឡប់ទៅផ្ទះ (Manual Quick Action)"
+        )
+        _voiceState.value = VoiceState.Success(directResult)
+        speak(directResult)
+    }
+
+    fun quickActionSetClimate() {
+        val nextTemp = if (_cabinTemp.value >= 25.0f) 19.0f else _cabinTemp.value + 1.0f
+        _cabinTemp.value = nextTemp
+
+        val directResult = VoiceIntelligenceResult(
+            intent = "climate_control",
+            chargerTypeRequired = null,
+            destinationName = null,
+            spokenResponseKhmer = "ចាស៎! បានកែសម្រួលសីតុណ្ហភាពម៉ាស៊ីនត្រជាក់ស្វ័យប្រវត្តិកម្រិត ${String.format(Locale.US, "%.1f", nextTemp)} អង្សាសេហើយ។",
+            spokenResponseEnglish = "Automatic cabin temperature adjusted to ${String.format(Locale.US, "%.1f", nextTemp)} degrees Celsius.",
+            transcribedKhmerText = "កំណត់សីតុណ្ហភាព ${String.format(Locale.US, "%.1f", nextTemp)}°C (Manual Quick Action)"
+        )
+        _voiceState.value = VoiceState.Success(directResult)
+        speak(directResult)
+    }
+
+    fun quickActionPlayMusic() {
+        val currPlaying = _isPlayingMusic.value
+        _isPlayingMusic.value = !currPlaying
+
+        val actionKhText = if (!currPlaying) {
+            "ចាស៎! កំពុងចាក់តន្ត្រីបែបលំហែកាយខ្មែរជូនលោកអ្នកដើម្បីការបើកបរដ៏រីករាយ។"
+        } else {
+            "ចាស៎! បានផ្អាកការចាក់តន្ត្រីរួចរាល់ហើយចាស៎។"
+        }
+
+        val actionEnText = if (!currPlaying) {
+            "Playing high-fidelity Cambodian Jazz playlist for a relaxing drive."
+        } else {
+            "Multimedia playback paused."
+        }
+
+        val directResult = VoiceIntelligenceResult(
+            intent = "play_media",
+            chargerTypeRequired = null,
+            destinationName = null,
+            spokenResponseKhmer = actionKhText,
+            spokenResponseEnglish = actionEnText,
+            transcribedKhmerText = if (!currPlaying) "ចាក់តន្ត្រីខ្មែរលំហែកាយ (Manual Play)" else "ផ្អាកតន្ត្រី (Manual Pause)"
+        )
+        _voiceState.value = VoiceState.Success(directResult)
+        speak(directResult)
     }
 
     // Live Mic Control
@@ -223,6 +358,17 @@ class VoiceIntelligenceViewModel(application: Application) : AndroidViewModel(ap
         _voiceState.value = VoiceState.Processing
         
         viewModelScope.launch {
+            if (presetName == "ERROR_OFFLINE") {
+                delay(1200)
+                _voiceState.value = VoiceState.Error("បណ្តាញអុីនធឺណិតខ្សោយ (Connection lost / API network timeout)")
+                return@launch
+            }
+            if (presetName == "ERROR_UNRECOGNIZED") {
+                delay(1200)
+                _voiceState.value = VoiceState.Error("ពាក្យបញ្ជាមិនត្រឹមត្រូវ (Unrecognized cognitive command / dialect mismatch)")
+                return@launch
+            }
+
             // Check if we are in pure Demo mode (either because key is missing or toggle is active)
             if (_isDemoMode.value) {
                 delay(1200) // Simulate processing time
@@ -266,6 +412,18 @@ class VoiceIntelligenceViewModel(application: Application) : AndroidViewModel(ap
 
     private fun handleResultOutcome(result: VoiceIntelligenceResult) {
         _voiceState.value = VoiceState.Success(result)
+        
+        // Cache the result in Room database
+        viewModelScope.launch {
+            cachingRepository.saveOrIncrementCommand(
+                query = result.transcribedKhmerText,
+                intent = result.intent,
+                chargerTypeRequired = result.chargerTypeRequired,
+                destinationName = result.destinationName,
+                spokenResponseKhmer = result.spokenResponseKhmer,
+                spokenResponseEnglish = result.spokenResponseEnglish
+            )
+        }
         
         // Dynamic map updates based on extracted JSON intent
         when (result.intent) {
@@ -373,6 +531,30 @@ class VoiceIntelligenceViewModel(application: Application) : AndroidViewModel(ap
 
     fun setDemoModeActive(active: Boolean) {
         _isDemoMode.value = active
+    }
+
+    fun executeCachedCommand(cachedCommand: CachedVoiceCommand) {
+        val result = VoiceIntelligenceResult(
+            intent = cachedCommand.intent,
+            chargerTypeRequired = cachedCommand.chargerTypeRequired,
+            destinationName = cachedCommand.destinationName,
+            spokenResponseKhmer = cachedCommand.spokenResponseKhmer,
+            spokenResponseEnglish = cachedCommand.spokenResponseEnglish,
+            transcribedKhmerText = cachedCommand.query
+        )
+        handleResultOutcome(result)
+    }
+
+    fun deleteCachedCommand(query: String) {
+        viewModelScope.launch {
+            cachingRepository.deleteCommand(query)
+        }
+    }
+
+    fun clearVoiceCache() {
+        viewModelScope.launch {
+            cachingRepository.clearCache()
+        }
     }
 
     override fun onCleared() {
